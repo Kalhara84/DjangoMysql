@@ -50,6 +50,8 @@ INSTALLED_APPS = [
 # Middleware = code that runs on every request/response
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise serves css/js/images even when DEBUG=False (needed on a real server)
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',          # checks {% csrf_token %} in forms
@@ -89,11 +91,11 @@ WSGI_APPLICATION = 'curd.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
+        'NAME': os.getenv('DB_NAME', ''),
+        'USER': os.getenv('DB_USER', ''),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DB_PORT', '3306'),
         'OPTIONS': {
             'charset': 'utf8mb4',
             # Strict mode: MySQL rejects wrong values instead of silently changing them
@@ -135,6 +137,14 @@ USE_TZ = True
 
 # URL prefix for css/js/images (files are in postgresql/static/)
 STATIC_URL = 'static/'
+
+# "python manage.py collectstatic" copies all static files here.
+# WhiteNoise then serves them in production (DEBUG=False).
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+
+# Needed when the site runs on a https domain (comma separated), e.g. https://mysite.com
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
